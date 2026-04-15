@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CREDITROLL — Movie Poster Credit Block Generator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;500;600;700;800;900&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="logo">CREDIT<span>ROLL</span></div>
+    <div class="logo-sub">Movie Poster Credit Block Generator</div>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center;">
+    <div class="ai-badge"><div class="ai-dot"></div>AI Parsing</div>
+    <button class="btn btn-ghost btn-sm" onclick="resetAll()">&#8635; Reset</button>
+  </div>
+</header>
+
+<div class="app">
+
+  <aside class="sidebar">
+
+    <div class="hint">
+      Paste credits in <em>any</em> format &mdash; role then names, comma-separated,
+      or upload a spreadsheet. Claude AI will automatically figure out what is a role
+      and what is a name.
+    </div>
+
+    <div class="card">
+      <div class="sec-label">Credits Input</div>
+      <div class="ig">
+        <label>Paste cast &amp; crew (any format)</label>
+        <textarea id="raw-input"
+          placeholder="Director&#10;Ajuawak Kapashesit&#10;&#10;Producers&#10;Bhavana Goparaju&#10;Ajuawak Kapashesit"></textarea>
+      </div>
+      <div class="ig">
+        <label>Or upload spreadsheet (CSV / Excel / TXT)</label>
+        <input type="file" id="file-input" accept=".csv,.xlsx,.xls,.txt"
+          onchange="handleFile(this)"
+          style="font-size:11px;padding:5px 8px;cursor:pointer;">
+      </div>
+      <button class="btn btn-primary btn-full" id="parse-btn" onclick="smartParse()">
+        &#10022; Parse &amp; Generate
+      </button>
+    </div>
+
+    <div class="card" id="parsed-card" style="display:none">
+      <div class="sec-label">
+        Parsed Credits
+        <span id="parsed-count" style="color:var(--text-dim);font-size:9px;letter-spacing:1px;"></span>
+      </div>
+      <div id="parsed-list"></div>
+      <div style="margin-top:8px;">
+        <button class="btn btn-ghost btn-sm btn-full" onclick="openEditor()">&#9998; Edit Parsed</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="sec-label">Output Width</div>
+      <div class="row2">
+        <div>
+          <label>Width</label>
+          <input type="number" id="width-val" value="1600" min="200" max="8000" oninput="onDimChange()">
+        </div>
+        <div>
+          <label>Unit</label>
+          <select id="width-unit" onchange="onDimChange()">
+            <option value="px">px</option>
+            <option value="in">inches</option>
+            <option value="cm">cm</option>
+          </select>
+        </div>
+      </div>
+      <div class="ig">
+        <label>DPI (for inches / cm)</label>
+        <input type="number" id="dpi" value="300" min="72" max="600" oninput="onDimChange()">
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="sec-label">Typography</div>
+      <div class="row2">
+        <div>
+          <label>Role size (px)</label>
+          <input type="number" id="role-sz" value="13" min="4" max="80" oninput="liveRender()">
+        </div>
+        <div>
+          <label>Name size (px)</label>
+          <input type="number" id="name-sz" value="28" min="6" max="120" oninput="liveRender()">
+        </div>
+      </div>
+      <div class="ig">
+        <label>Name font weight</label>
+        <div class="tg" id="wt-tg">
+          <button class="tg-btn"    data-wt="400" onclick="setWeight(this)">Reg</button>
+          <button class="tg-btn"    data-wt="600" onclick="setWeight(this)">Semi</button>
+          <button class="tg-btn on" data-wt="800" onclick="setWeight(this)">Bold</button>
+          <button class="tg-btn"    data-wt="900" onclick="setWeight(this)">Black</button>
+        </div>
+      </div>
+      <div class="ig">
+        <label>Role letter-spacing &mdash; <span id="ls-v">1</span>px</label>
+        <input type="range" id="ls-role" min="0" max="8" value="1"
+          oninput="document.getElementById('ls-v').textContent=this.value; liveRender()">
+      </div>
+      <div class="ig">
+        <label>Line height &mdash; <span id="lh-v">1.40</span></label>
+        <input type="range" id="lh" min="10" max="25" value="14" step="1"
+          oninput="document.getElementById('lh-v').textContent=(this.value/10).toFixed(2); liveRender()">
+      </div>
+      <div class="ig">
+        <label>Gap between pairs &mdash; <span id="gap-v">10</span>px</label>
+        <input type="range" id="pair-gap" min="0" max="80" value="10"
+          oninput="document.getElementById('gap-v').textContent=this.value; liveRender()">
+      </div>
+      <div class="ig">
+        <label>Padding top/bottom &mdash; <span id="pad-v">8</span>px</label>
+        <input type="range" id="v-pad" min="0" max="80" value="8"
+          oninput="document.getElementById('pad-v').textContent=this.value; liveRender()">
+      </div>
+      <div class="ig" style="margin-bottom:0">
+        <label>Side padding &mdash; <span id="side-v">16</span>px</label>
+        <input type="range" id="side-pad" min="0" max="120" value="16"
+          oninput="document.getElementById('side-v').textContent=this.value; liveRender()">
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="sec-label">Colors</div>
+      <div class="row2">
+        <div>
+          <label>Role color</label>
+          <div class="color-row">
+            <div class="swatch">
+              <input type="color" id="c-role" value="#ffffff"
+                oninput="syncHex('role'); liveRender()">
+            </div>
+            <input type="text" id="c-role-hex" value="#ffffff"
+              oninput="syncPicker('role')" style="font-size:11px">
+          </div>
+        </div>
+        <div>
+          <label>Name color</label>
+          <div class="color-row">
+            <div class="swatch">
+              <input type="color" id="c-name" value="#ffffff"
+                oninput="syncHex('name'); liveRender()">
+            </div>
+            <input type="text" id="c-name-hex" value="#ffffff"
+              oninput="syncPicker('name')" style="font-size:11px">
+          </div>
+        </div>
+      </div>
+      <div class="ig" style="margin-bottom:0">
+        <label>Background</label>
+        <div class="tg">
+          <button class="tg-btn on" data-bg="black"       onclick="setBg(this)">Black</button>
+          <button class="tg-btn"    data-bg="transparent" onclick="setBg(this)">None</button>
+          <button class="tg-btn"    data-bg="white"       onclick="setBg(this)">White</button>
+          <button class="tg-btn"    data-bg="custom"      onclick="setBg(this)">Custom</button>
+        </div>
+      </div>
+      <div class="ig" id="bg-custom-row" style="display:none;margin-top:10px;margin-bottom:0">
+        <label>Custom background</label>
+        <div class="color-row">
+          <div class="swatch">
+            <input type="color" id="c-bg" value="#000000"
+              oninput="syncHex('bg'); liveRender()">
+          </div>
+          <input type="text" id="c-bg-hex" value="#000000"
+            oninput="syncPicker('bg')" style="font-size:11px">
+        </div>
+      </div>
+    </div>
+
+  </aside>
+
+  <div class="preview-panel">
+    <div class="preview-toolbar">
+      <div class="preview-info">Width: <strong id="info-w">1600px</strong></div>
+      <div class="dl-group">
+        <button class="btn-dl" onclick="dlSVG()">&#8595; SVG</button>
+        <button class="btn-dl" onclick="dlPNG(1)">&#8595; PNG 1&times;</button>
+        <button class="btn-dl" onclick="dlPNG(2)">&#8595; PNG 2&times;</button>
+        <button class="btn-dl" onclick="dlPNG(3)">&#8595; PNG 3&times;</button>
+        <button class="btn-dl" onclick="copyHTML()">&#9014; HTML</button>
+      </div>
+    </div>
+    <div class="preview-stage">
+      <div class="checker" id="checker-wrap">
+        <div id="credits-out"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Edit Modal -->
+<div id="modal-overlay"
+  style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:500;align-items:center;justify-content:center;">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:3px;padding:24px;width:580px;max-width:95vw;max-height:80vh;overflow-y:auto;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+      <div class="sec-label" style="margin:0">Edit Parsed Credits</div>
+      <button class="btn btn-ghost btn-sm" onclick="closeEditor()">&#10005; Close</button>
+    </div>
+    <div style="font-size:9px;letter-spacing:2px;color:var(--text-faint);text-transform:uppercase;margin-bottom:10px;display:grid;grid-template-columns:1fr 2fr 28px;gap:6px;">
+      <span>Role</span><span>Names (comma-separated)</span><span></span>
+    </div>
+    <div id="edit-pairs" style="display:flex;flex-direction:column;gap:7px;"></div>
+    <div style="margin-top:14px;display:flex;gap:8px;">
+      <button class="btn btn-primary" onclick="applyEdits()">Apply Changes</button>
+      <button class="btn btn-ghost"   onclick="addPair()">+ Add Row</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
