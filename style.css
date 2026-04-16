@@ -67,6 +67,7 @@ header {
   display: grid;
   grid-template-columns: 360px 1fr;
   min-height: calc(100vh - 53px);
+  overflow: scroll;
 }
 
 /* ── SIDEBAR ── */
